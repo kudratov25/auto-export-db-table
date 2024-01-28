@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# Function to check if the project is a Laravel project
+is_laravel_project() {
+  [ -f artisan ] && [ -f composer.json ] && [ -f phpunit.xml ] && [ -d vendor ]
+}
+
+# Check if it's a Laravel project
+if is_laravel_project; then
+  # Source environment variables from .env file
+  if [ -f .env ]; then
+    source .env
+  else
+    echo "Error: .env file not found."
+    exit 1
+  fi
+
+  # Check if mysqldump is available
+  if command -v mysqldump > /dev/null; then
+    # Export database to a file named after the database
+    mysqldump -u $DB_USERNAME -p$DB_PASSWORD $DB_DATABASE > $DB_DATABASE.sql
+
+    # Check if mysqldump was successful
+    if [ $? -ne 0 ]; then
+      echo "Error: Database export failed."
+      exit 1
+    fi
+
+    # Stage the exported SQL file
+    git add $DB_DATABASE.sql
+  else
+    echo "Error: mysqldump command not found. Make sure MySQL client tools are installed."
+    exit 1
+  fi
+else
+  # If not a Laravel project, proceed with the default git add command
+  git add .
+fi
